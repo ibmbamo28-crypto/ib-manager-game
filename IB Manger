@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>IB Manager Game</title>
+
+  <style>
+    body {
+      margin: 0;
+      background: #1e7f3f;
+      overflow: hidden;
+      font-family: Arial;
+    }
+
+    #field {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .player {
+      width: 30px;
+      height: 30px;
+      position: absolute;
+      color: white;
+      font-size: 8px;
+      text-align: center;
+      line-height: 30px;
+    }
+
+    .goalkeeper {
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      position: absolute;
+    }
+
+    .ball {
+      width: 10px;
+      height: 10px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 20px;
+    }
+
+    #commentary {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: yellow;
+      font-size: 14px;
+    }
+
+    #tactics {
+      position: absolute;
+      left: 10px;
+      top: 50px;
+    }
+
+    button {
+      margin: 5px;
+      padding: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="score">0 - 0</div>
+<div id="commentary">Match Started</div>
+
+<div id="tactics">
+  <button onclick="setTactic('attack')">Attack</button>
+  <button onclick="setTactic('balanced')">Balanced</button>
+  <button onclick="setTactic('defense')">Defense</button>
+</div>
+
+<div id="field"></div>
+
+<script>
+
+let field = document.getElementById("field");
+
+let teamColor = "blue";
+let aiColor = "red";
+
+let tactic = "balanced";
+
+// BALL
+let ball = { x: 400, y: 200 };
+
+// TEAM
+let team = [
+  {name:"Messi",x:100,y:200},
+  {name:"Ronaldo",x:150,y:100},
+  {name:"Mbappe",x:150,y:300},
+  {name:"KDB",x:250,y:200}
+];
+
+// AI
+let ai = [
+  {name:"Salah",x:700,y:200},
+  {name:"Neymar",x:650,y:100},
+  {name:"Kane",x:650,y:300},
+  {name:"Bruno",x:550,y:200}
+];
+
+// GOALKEEPERS
+let gk1 = {x:50,y:200};
+let gk2 = {x:750,y:200};
+
+let possession = "team";
+let index = 0;
+
+let score = [0,0];
+let time = 0;
+
+// DRAW
+function draw() {
+  field.innerHTML = "";
+
+  let b = document.createElement("div");
+  b.className = "ball";
+  b.style.left = ball.x + "px";
+  b.style.top = ball.y + "px";
+  field.appendChild(b);
+
+  team.forEach(p=>{
+    let d=document.createElement("div");
+    d.className="player";
+    d.style.background=teamColor;
+    d.style.left=p.x+"px";
+    d.style.top=p.y+"px";
+    d.innerText=p.name;
+    field.appendChild(d);
+  });
+
+  ai.forEach(p=>{
+    let d=document.createElement("div");
+    d.className="player";
+    d.style.background=aiColor;
+    d.style.left=p.x+"px";
+    d.style.top=p.y+"px";
+    d.innerText=p.name;
+    field.appendChild(d);
+  });
+
+  let k1=document.createElement("div");
+  k1.className="goalkeeper";
+  k1.style.borderBottom="25px solid "+teamColor;
+  k1.style.left=gk1.x+"px";
+  k1.style.top=gk1.y+"px";
+  field.appendChild(k1);
+
+  let k2=document.createElement("div");
+  k2.className="goalkeeper";
+  k2.style.borderBottom="25px solid "+aiColor;
+  k2.style.left=gk2.x+"px";
+  k2.style.top=gk2.y+"px";
+  field.appendChild(k2);
+
+  document.getElementById("score").innerText = score[0]+" - "+score[1];
+}
+
+// TACTICS
+function setTactic(t) {
+  tactic = t;
+  commentary("Tactic: " + t);
+}
+
+// PASS
+function passBall() {
+  let side = possession==="team"?team:ai;
+
+  if (tactic==="attack") index = Math.floor(Math.random()*side.length);
+  else if (tactic==="defense") index = (index+1)%side.length;
+  else index = Math.floor(Math.random()*side.length);
+
+  ball.x = side[index].x;
+  ball.y = side[index].y;
+}
+
+// MOVE
+function movePlayers() {
+  let speed = tactic==="attack"?15: tactic==="defense"?5:10;
+
+  team.forEach(p=>{
+    p.x += Math.random()*speed - speed/2;
+    p.y += Math.random()*speed - speed/2;
+  });
+
+  ai.forEach(p=>{
+    p.x += Math.random()*10 - 5;
+    p.y += Math.random()*10 - 5;
+  });
+}
+
+// SHOOT
+function shoot() {
+  let chance = tactic==="attack"?0.2:0.08;
+
+  if (Math.random()<chance) {
+    if (possession==="team") {
+      score[0]++;
+      commentary("⚽ GOAL!");
+    } else {
+      score[1]++;
+      commentary("⚽ Opponent scores!");
+    }
+
+    ball.x = 400;
+    ball.y = 200;
+  }
+}
+
+// SWITCH
+function switchPos() {
+  if (Math.random()<0.3) {
+    possession = possession==="team"?"ai":"team";
+  }
+}
+
+// COMMENTARY
+function commentary(text) {
+  document.getElementById("commentary").innerText = text;
+}
+
+// TIME
+function updateTime() {
+  time++;
+  if (time===60) {
+    commentary("Full Time!");
+    clearInterval(loop);
+  }
+}
+
+// LOOP
+function gameLoop() {
+  movePlayers();
+  passBall();
+  shoot();
+  switchPos();
+  updateTime();
+  draw();
+}
+
+let loop = setInterval(gameLoop, 800);
+
+</script>
+
+</body>
+</html>
