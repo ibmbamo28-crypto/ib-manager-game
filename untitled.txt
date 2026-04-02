@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Football Manager Game</title>
+
+<style>
+body { margin:0; font-family:Arial; overflow:hidden; }
+
+/* SCREENS */
+.screen {
+  width:100vw; height:100vh;
+  display:none; justify-content:center; align-items:center;
+  flex-direction:column;
+  background:#111; color:white;
+}
+
+/* GAME FIELD */
+#game {
+  display:none;
+  width:100vw; height:100vh;
+  background:linear-gradient(#2e8b57,#3cb371,#2e8b57);
+  position:relative;
+}
+
+/* PLAYERS */
+.player {
+  width:28px; height:28px;
+  border-radius:50%;
+  position:absolute;
+  background:blue;
+  color:white;
+  font-size:10px;
+  text-align:center;
+  line-height:28px;
+}
+
+/* BALL */
+.ball {
+  width:10px; height:10px;
+  background:white;
+  border-radius:50%;
+  position:absolute;
+}
+
+/* SCORE */
+#scoreBoard {
+  position:absolute;
+  top:10px; left:10px;
+  background:black;
+  padding:5px;
+}
+
+button { padding:10px; margin:5px; }
+</style>
+</head>
+
+<body>
+
+<!-- SCREENS -->
+<div id="managerScreen" class="screen">
+  <h2>Enter Manager Name</h2>
+  <input id="managerName">
+  <button onclick="saveManager()">Start</button>
+</div>
+
+<div id="menu" class="screen">
+  <h2>Main Menu</h2>
+  <button onclick="nextMatch()">⚽ Next Match</button>
+  <button onclick="chooseFormation()">📐 Formation</button>
+  <button onclick="openStrategy()">🧠 Strategy</button>
+  <button onclick="saveGame()">💾 Save</button>
+</div>
+
+<!-- GAME -->
+<div id="game">
+  <div id="scoreBoard">0 - 0</div>
+</div>
+
+<script>
+
+/* =========================
+   GLOBAL SYSTEMS
+========================= */
+
+let manager = "";
+let selectedClub = {name:"Barcelona"};
+
+let currentFormation = "4-3-3";
+
+let strategy = {style:"Balanced", passing:"Short"};
+
+let club = {budget:50000000};
+
+let managerRating = 70;
+
+/* =========================
+   PLAYER DATABASE
+========================= */
+
+let playerDB = {
+  "Barcelona":[
+    {name:"Ter Stegen", pos:"GK", rating:89, energy:100},
+    {name:"Araujo", pos:"DEF", rating:85, energy:100},
+    {name:"Kounde", pos:"DEF", rating:84, energy:100},
+    {name:"Christensen", pos:"DEF", rating:83, energy:100},
+    {name:"Balde", pos:"DEF", rating:82, energy:100},
+    {name:"Pedri", pos:"MID", rating:87, energy:100},
+    {name:"De Jong", pos:"MID", rating:88, energy:100},
+    {name:"Gavi", pos:"MID", rating:85, energy:100},
+    {name:"Lewandowski", pos:"ST", rating:90, energy:100},
+    {name:"Raphinha", pos:"WING", rating:84, energy:100},
+    {name:"Felix", pos:"WING", rating:83, energy:100}
+  ]
+};
+
+let squad = [];
+let team = [];
+let bench = [];
+
+/* =========================
+   START
+========================= */
+
+managerScreen.style.display="flex";
+
+function saveManager(){
+  manager = managerName.value;
+  loadSquad();
+  menu.style.display="flex";
+  managerScreen.style.display="none";
+}
+
+function loadSquad(){
+  squad = playerDB[selectedClub.name];
+}
+
+/* =========================
+   FORMATION
+========================= */
+
+function createTeam(){
+
+  team = [];
+
+  let gk = squad.find(p=>p.pos==="GK");
+  let defs = squad.filter(p=>p.pos==="DEF");
+  let mids = squad.filter(p=>p.pos==="MID");
+  let sts = squad.filter(p=>p.pos==="ST");
+  let wings = squad.filter(p=>p.pos==="WING");
+
+  team.push(gk);
+  team.push(...defs.slice(0,4));
+  team.push(...mids.slice(0,3));
+  team.push(...wings.slice(0,2));
+  team.push(...sts.slice(0,1));
+
+  team = team.map((p,i)=>({
+    ...p,
+    x:50 + i*30,
+    y:100 + (i%5)*60
+  }));
+
+  bench = squad.slice(team.length);
+}
+
+/* =========================
+   MATCH SYSTEM
+========================= */
+
+let ball = {x:300,y:200};
+let score=[0,0];
+let time=0;
+let interval;
+
+function nextMatch(){
+  menu.style.display="none";
+  game.style.display="block";
+  startMatch();
+}
+
+function startMatch(){
+
+  createTeam();
+
+  score=[0,0];
+  time=0;
+
+  interval=setInterval(()=>{
+    gameLoop();
+    updateTime();
+  },1000);
+}
+
+function updateTime(){
+  time++;
+
+  if(time===45){
+    makeSubstitution();
+  }
+
+  if(time>=90){
+    clearInterval(interval);
+    endMatch();
+  }
+}
+
+function endMatch(){
+  recoverEnergy();
+  updateManagerRating("win");
+
+  alert("Match Ended");
+
+  game.style.display="none";
+  menu.style.display="flex";
+}
+
+/* =========================
+   GAME LOGIC
+========================= */
+
+function gameLoop(){
+  movePlayers();
+  reduceEnergy();
+  draw();
+}
+
+function movePlayers(){
+
+  let speed = strategy.style==="Attack"?0.08:
+              strategy.style==="Defense"?0.03:0.05;
+
+  team.forEach(p=>{
+    p.x += (ball.x - p.x)*speed;
+    p.y += (ball.y - p.y)*speed;
+
+    if(Math.random()<0.01){
+      score[0]++;
+      scoreBoard.innerText=score[0]+" - "+score[1];
+    }
+  });
+}
+
+function draw(){
+
+  game.querySelectorAll(".player,.ball").forEach(e=>e.remove());
+
+  team.forEach(p=>{
+    let d=document.createElement("div");
+    d.className="player";
+    d.innerText=p.name[0];
+    d.style.left=p.x+"px";
+    d.style.top=p.y+"px";
+    game.appendChild(d);
+  });
+
+  let b=document.createElement("div");
+  b.className="ball";
+  b.style.left=ball.x+"px";
+  b.style.top=ball.y+"px";
+  game.appendChild(b);
+}
+
+/* =========================
+   ENERGY + SUBS
+========================= */
+
+function reduceEnergy(){
+  team.forEach(p=>p.energy-=0.2);
+}
+
+function recoverEnergy(){
+  squad.forEach(p=>p.energy=100);
+}
+
+function makeSubstitution(){
+
+  let tired = team.find(p=>p.energy<30);
+
+  if(tired && bench.length>0){
+    let sub = bench.pop();
+    team = team.map(p=>p===tired?sub:p);
+  }
+}
+
+/* =========================
+   STRATEGY + FORMATION
+========================= */
+
+function chooseFormation(){
+  currentFormation = prompt("4-3-3 / 4-4-2 / 3-5-2");
+}
+
+function openStrategy(){
+  strategy.style = prompt("Attack / Balanced / Defense");
+}
+
+/* =========================
+   MANAGER + SAVE
+========================= */
+
+function updateManagerRating(){
+  managerRating+=2;
+}
+
+function saveGame(){
+  localStorage.setItem("manager",manager);
+  alert("Saved!");
+}
+
+</script>
+</body>
+</html>
