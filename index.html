@@ -1,368 +1,237 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hi Chat</title>
 
-<title>Football Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial;
+      background: #0b0f1a;
+      color: white;
+    }
 
-<style>
+    header {
+      background: #4169E1;
+      padding: 15px;
+      font-size: 20px;
+    }
 
-body{
-  margin:0;
-  overflow:hidden;
-}
+    #container {
+      display: flex;
+      height: 90vh;
+    }
 
-/* Landscape */
-@media screen and (orientation:portrait){
-  body{
-    transform: rotate(90deg);
-    transform-origin:left top;
-    width:100vh;
-    height:100vw;
-    position:absolute;
-    top:100%;
-  }
-}
+    #users {
+      width: 30%;
+      border-right: 1px solid #333;
+      overflow-y: auto;
+    }
 
-/* Game Field */
-#game{
-  width:100vw;
-  height:100vh;
-  position:relative;
-  background:url("https://i.imgur.com/6pO6FQK.png");
-  background-size:cover;
-}
+    #chatArea {
+      width: 70%;
+      display: flex;
+      flex-direction: column;
+    }
 
-/* Players */
-.player{
-  position:absolute;
-  width:28px;
-  height:28px;
-  border-radius:50%;
-  text-align:center;
-  line-height:28px;
-  color:white;
-  font-size:10px;
-}
+    .user {
+      padding: 10px;
+      border-bottom: 1px solid #222;
+      cursor: pointer;
+    }
 
-/* Ball */
-#ball{
-  width:12px;
-  height:12px;
-  background:white;
-  border-radius:50%;
-  position:absolute;
-}
+    .user:hover {
+      background: #1a1f2e;
+    }
 
-/* Scoreboard */
-#scoreBoard{
-  position:absolute;
-  top:10px;
-  left:10px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  color:white;
-  font-weight:bold;
-  z-index:10;
-}
+    #chat {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
 
-/* Joystick */
-#joystick{
-  position:absolute;
-  bottom:20px;
-  left:20px;
-  width:100px;
-  height:100px;
-  background:rgba(255,255,255,0.2);
-  border-radius:50%;
-}
+    .msg {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 10px;
+      max-width: 60%;
+    }
 
-#stick{
-  width:40px;
-  height:40px;
-  background:white;
-  border-radius:50%;
-  position:absolute;
-  left:30px;
-  top:30px;
-}
+    .me {
+      background: #4169E1;
+      align-self: flex-end;
+    }
 
-/* Buttons */
-#controls{
-  position:absolute;
-  bottom:20px;
-  right:20px;
-  display:grid;
-  grid-template-columns:repeat(3,70px);
-  gap:10px;
-}
+    .other {
+      background: #1a1f2e;
+      align-self: flex-start;
+    }
 
-#controls button{
-  width:70px;
-  height:70px;
-  border-radius:10px;
-}
+    #inputArea {
+      display: flex;
+    }
 
-</style>
+    input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+    }
+
+    button {
+      background: #4169E1;
+      color: white;
+      border: none;
+      padding: 10px;
+    }
+  </style>
 </head>
 
 <body>
 
-<div id="game">
+<header>💬 Hi Chat</header>
 
-<div id="scoreBoard">
-  <img id="clubLogo" width="30">
-  <span id="scoreText">0 - 0</span>
+<!-- LOGIN -->
+<div id="login">
+  <input id="phone" placeholder="+234..." />
+  <div id="recaptcha"></div>
+  <button onclick="sendOTP()">Send Code</button>
+
+  <input id="code" placeholder="OTP" />
+  <button onclick="verifyCode()">Login</button>
 </div>
 
-<div id="ball"></div>
+<!-- APP -->
+<div id="container" style="display:none;">
 
-<div id="joystick"><div id="stick"></div></div>
+  <!-- USERS -->
+  <div id="users"></div>
 
-<div id="controls"></div>
+  <!-- CHAT -->
+  <div id="chatArea">
+    <div id="chat"></div>
+
+    <div id="inputArea">
+      <input id="message" placeholder="Type message..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
 
 </div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script>
 
 <script>
-
-/* ================= BASIC ================= */
-let game = document.getElementById("game");
-let ball = {x:400,y:250};
-let team=[], aiTeam=[];
-let controlledPlayer=null;
-let joyX=0, joyY=0, sprinting=false;
-let hasBall=false;
-let score=[0,0];
-
-/* ================= MATCH ================= */
-let gameState="playing";
-let matchTime=0;
-let halfTime=false;
-
-/* ================= CLUB ================= */
-let selectedClub={name:"Barcelona",color:"blue"};
-
-let clubLogos={
- "Barcelona":"https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg"
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_PROJECT",
+  projectId: "YOUR_PROJECT_ID",
 };
 
-document.getElementById("clubLogo").src = clubLogos[selectedClub.name];
+firebase.initializeApp(firebaseConfig);
 
-/* ================= PLAYERS ================= */
-let playerDB={
- "Barcelona":[
-  {name:"Lewandowski",pos:"ST"},
-  {name:"Pedri",pos:"MID"},
-  {name:"Gavi",pos:"MID"},
-  {name:"De Jong",pos:"MID"},
-  {name:"Araujo",pos:"DEF"},
-  {name:"Kounde",pos:"DEF"},
-  {name:"Balde",pos:"DEF"},
-  {name:"Cancelo",pos:"DEF"},
-  {name:"Raphinha",pos:"WING"},
-  {name:"Felix",pos:"WING"},
-  {name:"Ter Stegen",pos:"GK"}
- ]
-};
+const db = firebase.firestore();
+const auth = firebase.auth();
 
-function loadTeam(){
- team = playerDB[selectedClub.name].map((p,i)=>({
-  ...p,
-  x:100+(i%4)*80,
-  y:80+Math.floor(i/4)*100
- }));
+let currentChatUser = null;
+let confirmationResult;
+
+// Recaptcha
+window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha');
+
+// LOGIN
+function sendOTP() {
+  auth.signInWithPhoneNumber(phone.value, recaptchaVerifier)
+    .then(res => {
+      confirmationResult = res;
+      alert("Code sent");
+    });
 }
 
-/* ================= AI ================= */
-function createAI(){
- aiTeam=[];
- for(let i=0;i<11;i++){
-  aiTeam.push({
-    x:600+(i%4)*80,
-    y:80+Math.floor(i/4)*100,
-    pos: i==0?"GK":"OUT"
+function verifyCode() {
+  confirmationResult.confirm(code.value)
+    .then(res => {
+      startApp(res.user);
+    });
+}
+
+// START APP
+function startApp(user) {
+  document.getElementById("login").style.display = "none";
+  document.getElementById("container").style.display = "flex";
+
+  db.collection("users").doc(user.uid).set({
+    phone: user.phoneNumber
   });
- }
+
+  loadUsers();
 }
 
-/* ================= JOYSTICK ================= */
-let joystick=document.getElementById("joystick");
-let stick=document.getElementById("stick");
+// LOAD USERS
+function loadUsers() {
+  db.collection("users").onSnapshot(snapshot => {
+    users.innerHTML = "";
+    snapshot.forEach(doc => {
+      if (doc.id !== auth.currentUser.uid) {
+        let div = document.createElement("div");
+        div.className = "user";
+        div.textContent = doc.data().phone;
 
-joystick.addEventListener("touchmove",e=>{
- let t=e.touches[0];
- let r=joystick.getBoundingClientRect();
- let x=t.clientX-r.left-50;
- let y=t.clientY-r.top-50;
- let d=Math.sqrt(x*x+y*y);
- if(d>40){x=(x/d)*40;y=(y/d)*40;}
- stick.style.left=(x+30)+"px";
- stick.style.top=(y+30)+"px";
- joyX=x/40; joyY=y/40;
-});
+        div.onclick = () => openChat(doc.id);
 
-/* ================= MOVE ================= */
-function movePlayers(){
-
- team.forEach(p=>{
-
-  if(p.pos==="GK") return;
-
-  if(p===controlledPlayer){
-    let speed=sprinting?6:3;
-    p.x+=joyX*speed;
-    p.y+=joyY*speed;
-
-    if(Math.hypot(ball.x-p.x,ball.y-p.y)<20){
-      ball.x=p.x; ball.y=p.y;
-      hasBall=true;
-    }
-  }
-
- });
-
+        users.appendChild(div);
+      }
+    });
+  });
 }
 
-/* ================= AI ================= */
-function moveAI(){
+// OPEN CHAT
+function openChat(uid) {
+  currentChatUser = uid;
 
- aiTeam.forEach(p=>{
+  db.collection("messages")
+    .orderBy("time")
+    .onSnapshot(snapshot => {
+      chat.innerHTML = "";
 
-  if(p.pos==="GK"){
-    p.x += (ball.x-p.x)*0.05;
-    p.y += (ball.y-p.y)*0.05;
-  } else {
-    p.x += (ball.x-p.x)*0.03;
-    p.y += (ball.y-p.y)*0.03;
-  }
+      snapshot.forEach(doc => {
+        let msg = doc.data();
 
- });
+        if (
+          (msg.from === auth.currentUser.uid && msg.to === uid) ||
+          (msg.from === uid && msg.to === auth.currentUser.uid)
+        ) {
+          let div = document.createElement("div");
 
+          div.className = "msg " + 
+            (msg.from === auth.currentUser.uid ? "me" : "other");
+
+          div.textContent = msg.text;
+
+          chat.appendChild(div);
+        }
+      });
+    });
 }
 
-/* ================= GOAL ================= */
-function checkGoal(){
+// SEND MESSAGE
+function sendMessage() {
+  if (!currentChatUser) return;
 
- if(ball.x>window.innerWidth-20 && ball.y>150 && ball.y<300){
-   score[0]++;
-   reset();
- }
+  db.collection("messages").add({
+    text: message.value,
+    from: auth.currentUser.uid,
+    to: currentChatUser,
+    time: Date.now()
+  });
 
- if(ball.x<20 && ball.y>150 && ball.y<300){
-   score[1]++;
-   reset();
- }
-
+  message.value = "";
 }
-
-/* ================= RESET ================= */
-function reset(){
- ball.x=400;
- ball.y=250;
-}
-
-/* ================= TIME ================= */
-function updateTime(){
-
- if(gameState!=="playing") return;
-
- matchTime++;
-
- if(matchTime===2700 && !halfTime){
-   gameState="halftime";
-   halfTime=true;
-   alert("Half Time");
-   setTimeout(()=>gameState="playing",4000);
- }
-
- if(matchTime>=5400){
-   gameState="finished";
-   alert("Full Time");
- }
-
-}
-
-/* ================= SCORE ================= */
-function updateScore(){
- document.getElementById("scoreText").innerText=
-  score[0]+" - "+score[1];
-}
-
-/* ================= DRAW ================= */
-function draw(){
-
- document.querySelectorAll(".player").forEach(p=>p.remove());
-
- let b=document.getElementById("ball");
- b.style.left=ball.x+"px";
- b.style.top=ball.y+"px";
-
- team.forEach(p=>{
-  let d=document.createElement("div");
-  d.className="player";
-  d.style.background=selectedClub.color;
-  d.style.left=p.x+"px";
-  d.style.top=p.y+"px";
-  d.innerText=p.name[0];
-  game.appendChild(d);
- });
-
- aiTeam.forEach(p=>{
-  let d=document.createElement("div");
-  d.className="player";
-  d.style.background="red";
-  d.style.left=p.x+"px";
-  d.style.top=p.y+"px";
-  game.appendChild(d);
- });
-
-}
-
-/* ================= CONTROLS ================= */
-function updateControls(){
-
- let c=document.getElementById("controls");
-
- c.innerHTML=`
- <button onclick="shoot()">A</button>
- <button onclick="pass()">B</button>
- <button onclick="longPass()">C</button>
- <button onclick="through()">D</button>
- <button onclick="sprint()">R</button>
- `;
-
-}
-
-function shoot(){ball.x+=joyX*150; ball.y+=joyY*150;}
-function pass(){ball.x+=joyX*60; ball.y+=joyY*60;}
-function longPass(){ball.x+=joyX*120; ball.y+=joyY*120;}
-function through(){ball.x+=joyX*100; ball.y+=joyY*50;}
-function sprint(){sprinting=true; setTimeout(()=>sprinting=false,1000);}
-
-/* ================= LOOP ================= */
-function loop(){
-
- if(gameState==="playing"){
-  movePlayers();
-  moveAI();
-  checkGoal();
- }
-
- updateTime();
- updateScore();
- updateControls();
- draw();
-
- requestAnimationFrame(loop);
-}
-
-/* ================= START ================= */
-loadTeam();
-createAI();
-controlledPlayer=team[0];
-loop();
-
 </script>
+
 </body>
 </html>
