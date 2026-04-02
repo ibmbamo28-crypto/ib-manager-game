@@ -1,286 +1,181 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+/* =========================
+   🌍 LEAGUES (KEEP THIS)
+========================= */
+let leagues = {
 
-<style>
-body { margin:0; font-family:Arial; overflow:hidden; }
+  "Premier League": [
+    {name:"Manchester City"},
+    {name:"Manchester United"},
+    {name:"Chelsea"},
+    {name:"Arsenal"}
+  ],
 
-/* SCREENS */
-.screen {
-  width:100vw; height:100vh;
-  display:none; justify-content:center; align-items:center;
-  flex-direction:column;
-  color:white;
-}
+  "La Liga": [
+    {name:"Barcelona"},
+    {name:"Real Madrid"},
+    {name:"Atletico Madrid"},
+    {name:"Sevilla"}
+  ],
 
-/* MENU BACKGROUND */
-#menu {
-  background: url('YOUR_BACKGROUND_IMAGE_LINK') no-repeat center center;
-  background-size: cover;
-}
+  "Bundesliga": [
+    {name:"Bayern Munich"},
+    {name:"Dortmund"},
+    {name:"Leipzig"},
+    {name:"Leverkusen"}
+  ],
 
-/* GAME FIELD */
-#game {
-  display:none;
-  width:100vw;
-  height:100vh;
-  position:relative;
+  "Serie A": [
+    {name:"Juventus"},
+    {name:"Inter Milan"},
+    {name:"AC Milan"},
+    {name:"Napoli"}
+  ]
 
-  background: repeating-linear-gradient(
-    90deg,
-    #2e8b57,
-    #2e8b57 40px,
-    #3cb371 40px,
-    #3cb371 80px
-  );
-}
-
-/* FIELD LINES */
-.pitch-lines::before {
-  content:"";
-  position:absolute;
-  width:100%;
-  height:100%;
-  border:3px solid white;
-}
-
-.pitch-lines::after {
-  content:"";
-  position:absolute;
-  width:2px;
-  height:100%;
-  background:white;
-  left:50%;
-}
-
-.center-circle {
-  position:absolute;
-  width:120px;
-  height:120px;
-  border:3px solid white;
-  border-radius:50%;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-}
-
-/* PLAYERS */
-.player {
-  width:28px; height:28px;
-  border-radius:50%;
-  position:absolute;
-  background:blue;
-  color:white;
-  font-size:10px;
-  text-align:center;
-  line-height:28px;
-}
-
-/* BALL */
-.ball {
-  width:10px; height:10px;
-  background:white;
-  border-radius:50%;
-  position:absolute;
-}
-
-/* SCORE */
-#scoreBoard {
-  position:absolute;
-  top:10px;
-  left:10px;
-  background:black;
-  padding:5px;
-}
-
-button { padding:10px; margin:5px; }
-</style>
-</head>
-
-<body>
-
-<!-- MANAGER -->
-<div id="managerScreen" class="screen" style="display:flex;">
-  <h2>Enter Manager Name</h2>
-  <input id="managerName">
-  <button onclick="startGame()">Start</button>
-</div>
-
-<!-- MENU -->
-<div id="menu" class="screen">
-  <h2>Main Menu</h2>
-  <button onclick="nextMatch()">⚽ Next Match</button>
-  <button onclick="openFormation()">📐 Formation</button>
-  <button onclick="openStrategy()">🧠 Strategy</button>
-  <button onclick="openClub()">🏟️ Club</button>
-</div>
-
-<!-- FORMATION -->
-<div id="formationScreen" class="screen">
-  <h2>Formation</h2>
-  <button onclick="setFormation('4-3-3')">4-3-3</button>
-  <button onclick="setFormation('4-4-2')">4-4-2</button>
-  <button onclick="backMenu()">Back</button>
-</div>
-
-<!-- STRATEGY -->
-<div id="strategyScreen" class="screen">
-  <h2>Strategy</h2>
-
-  <button onclick="setStyle('Attack')">Attack</button>
-  <button onclick="setStyle('Balanced')">Balanced</button>
-  <button onclick="setStyle('Defense')">Defense</button>
-
-  <button onclick="backMenu()">Back</button>
-</div>
-
-<!-- CLUB -->
-<div id="clubScreen" class="screen">
-  <h2>Club</h2>
-  <button onclick="viewSquad()">Squad</button>
-  <button onclick="viewTable()">League Table</button>
-  <button onclick="backMenu()">Back</button>
-</div>
-
-<!-- GAME -->
-<div id="game">
-  <div id="scoreBoard">
-    <img id="homeLogo" width="25">
-    <span id="scoreText">0-0</span>
-    <img id="awayLogo" width="25">
-  </div>
-
-  <div class="pitch-lines"></div>
-  <div class="center-circle"></div>
-</div>
-
-<script>
-
-/* SYSTEM */
-let manager="";
-let currentFormation="4-3-3";
-let strategy={style:"Balanced"};
-
-let clubLogos={
- "Barcelona":"https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/120px-FC_Barcelona_%28crest%29.svg.png",
- "Real Madrid":"https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/120px-Real_Madrid_CF.svg.png"
 };
 
-let squad=[
-{name:"Player1",pos:"GK",energy:100},
-{name:"Player2",pos:"DEF",energy:100},
-{name:"Player3",pos:"DEF",energy:100},
-{name:"Player4",pos:"DEF",energy:100},
-{name:"Player5",pos:"DEF",energy:100},
-{name:"Player6",pos:"MID",energy:100},
-{name:"Player7",pos:"MID",energy:100},
-{name:"Player8",pos:"MID",energy:100},
-{name:"Player9",pos:"ST",energy:100},
-{name:"Player10",pos:"ST",energy:100},
-{name:"Player11",pos:"WING",energy:100}
-];
 
-let team=[];
-let ball={x:300,y:200};
-let score=[0,0];
-let time=0;
-let interval;
+/* =========================
+   🧠 SELECTED CLUB
+========================= */
+let selectedClub = {
+  name:"Barcelona",
+  color:"blue",
+  league:"La Liga"
+};
 
-/* START */
-function startGame(){
-  managerScreen.style.display="none";
-  menu.style.display="flex";
-}
 
-/* MENU */
-function openFormation(){menu.style.display="none";formationScreen.style.display="flex";}
-function openStrategy(){menu.style.display="none";strategyScreen.style.display="flex";}
-function openClub(){menu.style.display="none";clubScreen.style.display="flex";}
-function backMenu(){
-  formationScreen.style.display="none";
-  strategyScreen.style.display="none";
-  clubScreen.style.display="none";
-  menu.style.display="flex";
-}
+/* =========================
+   ⚽ REAL PLAYER DATABASE
+========================= */
+let playerDB = {
 
-/* SETTINGS */
-function setFormation(f){currentFormation=f;alert(f);}
-function setStyle(s){strategy.style=s;alert(s);}
+  "Barcelona": [
+    {name:"Lewandowski", pos:"ST"},
+    {name:"Raphinha", pos:"WING"},
+    {name:"Pedri", pos:"MID"},
+    {name:"Gavi", pos:"MID"},
+    {name:"De Jong", pos:"MID"},
+    {name:"Cancelo", pos:"DEF"},
+    {name:"Araujo", pos:"DEF"},
+    {name:"Kounde", pos:"DEF"},
+    {name:"Balde", pos:"DEF"},
+    {name:"Ter Stegen", pos:"GK"},
+    {name:"Felix", pos:"WING"}
+  ],
 
-/* MATCH */
-function nextMatch(){
-  menu.style.display="none";
-  game.style.display="block";
+  "Real Madrid": [
+    {name:"Vinicius", pos:"WING"},
+    {name:"Rodrygo", pos:"WING"},
+    {name:"Bellingham", pos:"MID"},
+    {name:"Modric", pos:"MID"},
+    {name:"Valverde", pos:"MID"},
+    {name:"Carvajal", pos:"DEF"},
+    {name:"Militao", pos:"DEF"},
+    {name:"Alaba", pos:"DEF"},
+    {name:"Mendy", pos:"DEF"},
+    {name:"Courtois", pos:"GK"},
+    {name:"Joselu", pos:"ST"}
+  ],
 
-  homeLogo.src=clubLogos["Barcelona"];
-  awayLogo.src=clubLogos["Real Madrid"];
+  "Manchester City": [
+    {name:"Haaland", pos:"ST"},
+    {name:"Foden", pos:"WING"},
+    {name:"De Bruyne", pos:"MID"},
+    {name:"Rodri", pos:"MID"},
+    {name:"Bernardo", pos:"MID"},
+    {name:"Walker", pos:"DEF"},
+    {name:"Dias", pos:"DEF"},
+    {name:"Stones", pos:"DEF"},
+    {name:"Gvardiol", pos:"DEF"},
+    {name:"Ederson", pos:"GK"},
+    {name:"Doku", pos:"WING"}
+  ]
 
-  startMatch();
-}
+};
 
-function startMatch(){
-  createTeam();
-  interval=setInterval(()=>{
-    movePlayers();
-    draw();
-    time++;
-    if(time>=90){clearInterval(interval);endMatch();}
-  },1000);
-}
 
-function endMatch(){
-  alert("Full Time");
-  game.style.display="none";
-  menu.style.display="flex";
-}
+/* =========================
+   ⚙️ GENERATE OTHER CLUBS
+========================= */
+function generateGenericTeam(clubName){
 
-/* TEAM */
-function createTeam(){
-  team=squad.map((p,i)=>({
-    ...p,
-    x:60+(i%4)*100,
-    y:80+Math.floor(i/4)*100
+  let positions = ["GK","DEF","DEF","DEF","DEF","MID","MID","MID","WING","WING","ST"];
+
+  return positions.map((pos,i)=>({
+    name: clubName + " Player " + (i+1),
+    pos: pos,
+    speed: 3 + Math.random()*3,
+    shoot: 3 + Math.random()*3,
+    pass: 3 + Math.random()*3
   }));
+
 }
 
-/* GAME */
-function movePlayers(){
-  team.forEach(p=>{
-    p.x+=(ball.x-p.x)*0.05;
-    p.y+=(ball.y-p.y)*0.05;
-  });
+
+/* =========================
+   🧩 LOAD SQUAD
+========================= */
+let squad = [];
+
+function loadSquad(){
+
+  if(playerDB[selectedClub.name]){
+    squad = playerDB[selectedClub.name];
+  } else {
+    squad = generateGenericTeam(selectedClub.name);
+  }
+
 }
 
-function draw(){
-  game.querySelectorAll(".player,.ball").forEach(e=>e.remove());
 
-  team.forEach(p=>{
-    let d=document.createElement("div");
-    d.className="player";
-    d.innerText=p.name[0];
-    d.style.left=p.x+"px";
-    d.style.top=p.y+"px";
-    game.appendChild(d);
-  });
+/* =========================
+   🖼️ CLUB LOGOS
+========================= */
+let clubLogos = {
 
-  let b=document.createElement("div");
-  b.className="ball";
-  b.style.left=ball.x+"px";
-  b.style.top=ball.y+"px";
-  game.appendChild(b);
+ "Barcelona":"https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/120px-FC_Barcelona_%28crest%29.svg.png",
+
+ "Real Madrid":"https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/120px-Real_Madrid_CF.svg.png",
+
+ "Manchester City":"https://upload.wikimedia.org/wikipedia/en/thumb/e/eb/Manchester_City_FC_badge.svg/120px-Manchester_City_FC_badge.svg.png"
+
+};
+
+
+/* =========================
+   🧠 SAFE LOGO FUNCTION
+========================= */
+function getLogo(club){
+
+  if(clubLogos[club]){
+    return clubLogos[club];
+  }
+
+  return "https://via.placeholder.com/40";
 }
 
-/* CLUB */
-function viewSquad(){
-  alert(squad.map(p=>p.name).join("\n"));
+
+/* =========================
+   🏟️ SELECT CLUB
+========================= */
+function selectClub(name,league,color){
+
+  selectedClub.name = name;
+  selectedClub.league = league;
+  selectedClub.color = color;
+
+  loadSquad();
+
+  alert("Managing " + name);
 }
 
-function viewTable(){
-  alert("League Table Coming Soon");
+
+/* =========================
+   ⚽ MATCH LOGO USE
+========================= */
+function setMatchLogos(opponent){
+
+  homeLogo.src = getLogo(selectedClub.name);
+  awayLogo.src = getLogo(opponent);
+
 }
-
-</script>
-
-</body>
-</html>
