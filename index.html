@@ -2,39 +2,23 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IB Manager Game</title>
-
-<link rel="icon" href="icon.png">
 
 <style>
 body { margin:0; font-family:Arial; overflow:hidden; }
 
-/* SPLASH */
-#splash {
-  width:100vw; height:100vh;
-  background:black;
-  display:flex; justify-content:center; align-items:center;
-}
-#splash img { width:150px; }
-
 /* SCREENS */
 .screen {
   width:100vw; height:100vh;
-  display:none;
+  display:none; justify-content:center; align-items:center;
   flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:url("menu-bg.jpg") no-repeat center/cover;
   color:white;
-  position:relative;
 }
-.screen::before {
-  content:"";
-  position:absolute;
-  width:100%; height:100%;
-  background:rgba(0,0,0,0.5);
+
+/* MENU BACKGROUND */
+#menu {
+  background: url('YOUR_BACKGROUND_IMAGE_LINK') no-repeat center center;
+  background-size: cover;
 }
-.screen * { position:relative; z-index:1; }
 
 /* GAME FIELD */
 #game {
@@ -42,48 +26,55 @@ body { margin:0; font-family:Arial; overflow:hidden; }
   width:100vw;
   height:100vh;
   position:relative;
-  background: linear-gradient(#2e8b57,#3cb371,#2e8b57);
+
+  background: repeating-linear-gradient(
+    90deg,
+    #2e8b57,
+    #2e8b57 40px,
+    #3cb371 40px,
+    #3cb371 80px
+  );
 }
 
 /* FIELD LINES */
-#fieldLines::before {
+.pitch-lines::before {
   content:"";
   position:absolute;
-  left:50%;
+  width:100%;
+  height:100%;
+  border:3px solid white;
+}
+
+.pitch-lines::after {
+  content:"";
+  position:absolute;
   width:2px;
   height:100%;
   background:white;
+  left:50%;
 }
-#fieldLines::after {
-  content:"";
+
+.center-circle {
   position:absolute;
-  top:50%; left:50%;
-  width:120px; height:120px;
-  border:2px solid white;
+  width:120px;
+  height:120px;
+  border:3px solid white;
   border-radius:50%;
+  top:50%;
+  left:50%;
   transform:translate(-50%,-50%);
 }
 
-/* GOAL BOX */
-.leftBox, .rightBox {
-  position:absolute;
-  top:30%;
-  width:80px;
-  height:40%;
-  border:2px solid white;
-}
-.leftBox { left:0; }
-.rightBox { right:0; }
-
 /* PLAYERS */
 .player {
-  width:30px; height:30px;
+  width:28px; height:28px;
   border-radius:50%;
   position:absolute;
+  background:blue;
   color:white;
-  text-align:center;
-  line-height:30px;
   font-size:10px;
+  text-align:center;
+  line-height:28px;
 }
 
 /* BALL */
@@ -94,240 +85,182 @@ body { margin:0; font-family:Arial; overflow:hidden; }
   position:absolute;
 }
 
-/* COMMENTARY */
-#commentaryBar {
-  position:absolute;
-  top:-50px;
-  width:100%;
-  display:flex;
-  justify-content:center;
-  gap:10px;
-  color:white;
-  padding:8px;
-  transition:0.5s;
-}
-#commentaryBar.show { top:0; }
-
 /* SCORE */
 #scoreBoard {
   position:absolute;
-  top:10px; left:10px;
-  background:rgba(0,0,0,0.6);
+  top:10px;
+  left:10px;
+  background:black;
   padding:5px;
-  border-radius:10px;
-  display:flex;
-  gap:5px;
-  color:white;
-}
-#scoreBoard img { width:20px; }
-
-#matchTime {
-  position:absolute;
-  top:40px; left:10px;
-  background:rgba(0,0,0,0.6);
-  padding:3px 8px;
-  border-radius:8px;
 }
 
-/* BUTTON */
-button {
-  padding:10px;
-  margin:5px;
-}
+button { padding:10px; margin:5px; }
 </style>
 </head>
 
 <body>
 
-<div id="splash"><img src="icon.png"></div>
-
-<div id="clubScreen" class="screen">
-<h2>Select Club</h2>
-<div id="clubList"></div>
+<!-- MANAGER -->
+<div id="managerScreen" class="screen" style="display:flex;">
+  <h2>Enter Manager Name</h2>
+  <input id="managerName">
+  <button onclick="startGame()">Start</button>
 </div>
 
-<div id="managerScreen" class="screen">
-<input id="managerName" placeholder="Manager Name">
-<button onclick="saveManager()">Continue</button>
-</div>
-
-<div id="contractScreen" class="screen">
-<p id="contractText"></p>
-<button onclick="acceptContract()">Accept</button>
-</div>
-
+<!-- MENU -->
 <div id="menu" class="screen">
-<button onclick="chooseFormation()">Formation</button>
-<button onclick="openStrategy()">Strategy</button>
-<button onclick="nextMatch()">Next Match</button>
-<button onclick="toggleSound()">Mute</button>
+  <h2>Main Menu</h2>
+  <button onclick="nextMatch()">⚽ Next Match</button>
+  <button onclick="openFormation()">📐 Formation</button>
+  <button onclick="openStrategy()">🧠 Strategy</button>
+  <button onclick="openClub()">🏟️ Club</button>
 </div>
 
+<!-- FORMATION -->
+<div id="formationScreen" class="screen">
+  <h2>Formation</h2>
+  <button onclick="setFormation('4-3-3')">4-3-3</button>
+  <button onclick="setFormation('4-4-2')">4-4-2</button>
+  <button onclick="backMenu()">Back</button>
+</div>
+
+<!-- STRATEGY -->
+<div id="strategyScreen" class="screen">
+  <h2>Strategy</h2>
+
+  <button onclick="setStyle('Attack')">Attack</button>
+  <button onclick="setStyle('Balanced')">Balanced</button>
+  <button onclick="setStyle('Defense')">Defense</button>
+
+  <button onclick="backMenu()">Back</button>
+</div>
+
+<!-- CLUB -->
+<div id="clubScreen" class="screen">
+  <h2>Club</h2>
+  <button onclick="viewSquad()">Squad</button>
+  <button onclick="viewTable()">League Table</button>
+  <button onclick="backMenu()">Back</button>
+</div>
+
+<!-- GAME -->
 <div id="game">
-<div id="fieldLines"></div>
-<div class="leftBox"></div>
-<div class="rightBox"></div>
+  <div id="scoreBoard">
+    <img id="homeLogo" width="25">
+    <span id="scoreText">0-0</span>
+    <img id="awayLogo" width="25">
+  </div>
 
-<div id="scoreBoard">
-<img id="homeLogo">
-<span id="scoreText">0-0</span>
-<img id="awayLogo">
+  <div class="pitch-lines"></div>
+  <div class="center-circle"></div>
 </div>
-
-<div id="matchTime">0'</div>
-
-<div id="commentaryBar">
-<img id="commentaryLogo" width="20">
-<span id="commentaryText"></span>
-</div>
-</div>
-
-<!-- AUDIO -->
-<audio id="bgMusic" loop src="music.mp3"></audio>
-<audio id="crowdSound" loop src="crowd.mp3"></audio>
-<audio id="goalSound" src="goal.mp3"></audio>
 
 <script>
 
-// START FLOW
-setTimeout(()=>{
-  splash.style.display="none";
-  clubScreen.style.display="flex";
-  loadClubs();
-},5000);
+/* SYSTEM */
+let manager="";
+let currentFormation="4-3-3";
+let strategy={style:"Balanced"};
 
-// CLUBS
-let clubs = [
-{name:"Barcelona",logo:"https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg"},
-{name:"Bayern Munich",logo:"https://upload.wikimedia.org/wikipedia/en/1/1f/FC_Bayern_München_logo_%282017%29.svg"}
+let clubLogos={
+ "Barcelona":"https://upload.wikimedia.org/wikipedia/en/thumb/4/47/FC_Barcelona_%28crest%29.svg/120px-FC_Barcelona_%28crest%29.svg.png",
+ "Real Madrid":"https://upload.wikimedia.org/wikipedia/en/thumb/5/56/Real_Madrid_CF.svg/120px-Real_Madrid_CF.svg.png"
+};
+
+let squad=[
+{name:"Player1",pos:"GK",energy:100},
+{name:"Player2",pos:"DEF",energy:100},
+{name:"Player3",pos:"DEF",energy:100},
+{name:"Player4",pos:"DEF",energy:100},
+{name:"Player5",pos:"DEF",energy:100},
+{name:"Player6",pos:"MID",energy:100},
+{name:"Player7",pos:"MID",energy:100},
+{name:"Player8",pos:"MID",energy:100},
+{name:"Player9",pos:"ST",energy:100},
+{name:"Player10",pos:"ST",energy:100},
+{name:"Player11",pos:"WING",energy:100}
 ];
 
-let selectedClub,currentTeam;
+let team=[];
+let ball={x:300,y:200};
+let score=[0,0];
+let time=0;
+let interval;
 
-function loadClubs(){
-  clubs.forEach(c=>{
-    let d=document.createElement("div");
-    d.innerHTML=`<img src="${c.logo}" width="50"><p>${c.name}</p>`;
-    d.onclick=()=>selectClub(c);
-    clubList.appendChild(d);
-  });
-}
-
-function selectClub(c){
-  selectedClub=c;
-  currentTeam=c.name;
-  clubScreen.style.display="none";
-  managerScreen.style.display="flex";
-}
-
-function saveManager(){
-  playSound(bgMusic);
+/* START */
+function startGame(){
   managerScreen.style.display="none";
-  contractScreen.style.display="flex";
-  contractText.innerText="Manage "+selectedClub.name;
-}
-
-function acceptContract(){
-  contractScreen.style.display="none";
   menu.style.display="flex";
 }
 
-// SOUND
-let isMuted=false;
-function playSound(a){ if(!isMuted) a.play(); }
-function toggleSound(){
-  isMuted=!isMuted;
-  if(isMuted){ bgMusic.pause(); crowdSound.pause(); }
-  else bgMusic.play();
+/* MENU */
+function openFormation(){menu.style.display="none";formationScreen.style.display="flex";}
+function openStrategy(){menu.style.display="none";strategyScreen.style.display="flex";}
+function openClub(){menu.style.display="none";clubScreen.style.display="flex";}
+function backMenu(){
+  formationScreen.style.display="none";
+  strategyScreen.style.display="none";
+  clubScreen.style.display="none";
+  menu.style.display="flex";
 }
 
-// MATCH
-let score=[0,0],time=0,matchInterval;
+/* SETTINGS */
+function setFormation(f){currentFormation=f;alert(f);}
+function setStyle(s){strategy.style=s;alert(s);}
 
+/* MATCH */
 function nextMatch(){
   menu.style.display="none";
   game.style.display="block";
+
+  homeLogo.src=clubLogos["Barcelona"];
+  awayLogo.src=clubLogos["Real Madrid"];
+
   startMatch();
 }
 
 function startMatch(){
-  score=[0,0]; time=0;
-  scoreText.innerText="0-0";
-  homeLogo.src=selectedClub.logo;
-  awayLogo.src=clubs[1].logo;
-
-  playSound(crowdSound);
-
-  matchInterval=setInterval(()=>{
-    gameLoop();
-    updateTime();
+  createTeam();
+  interval=setInterval(()=>{
+    movePlayers();
+    draw();
+    time++;
+    if(time>=90){clearInterval(interval);endMatch();}
   },1000);
 }
 
-// TIME + HALF TIME
-function updateTime(){
-  time++;
-  matchTime.innerText=time+"'";
-
-  if(time===45){
-    clearInterval(matchInterval);
-    alert("Half Time");
-    startSecondHalf();
-  }
-
-  if(time>=90){
-    clearInterval(matchInterval);
-    endMatch();
-  }
-}
-
-function startSecondHalf(){
-  matchInterval=setInterval(()=>{
-    gameLoop();
-    updateTime();
-  },1000);
-}
-
-// END
 function endMatch(){
-  crowdSound.pause();
   alert("Full Time");
   game.style.display="none";
   menu.style.display="flex";
 }
 
-// PLAYERS
-let team=[
-{role:"ST",x:200,y:200},
-{role:"MID",x:150,y:150},
-{role:"DEF",x:100,y:200}
-];
-
-let ball={x:300,y:200};
-
-function movePlayers(){
-  team.forEach(p=>{
-    p.x += (ball.x - p.x)*0.05;
-    p.y += (ball.y - p.y)*0.05;
-  });
-
-  if(Math.random()<0.05){
-    score[0]++;
-    scoreText.innerText=score[0]+"-"+score[1];
-    playSound(goalSound);
-  }
+/* TEAM */
+function createTeam(){
+  team=squad.map((p,i)=>({
+    ...p,
+    x:60+(i%4)*100,
+    y:80+Math.floor(i/4)*100
+  }));
 }
 
-// DRAW
+/* GAME */
+function movePlayers(){
+  team.forEach(p=>{
+    p.x+=(ball.x-p.x)*0.05;
+    p.y+=(ball.y-p.y)*0.05;
+  });
+}
+
 function draw(){
   game.querySelectorAll(".player,.ball").forEach(e=>e.remove());
 
   team.forEach(p=>{
     let d=document.createElement("div");
     d.className="player";
+    d.innerText=p.name[0];
     d.style.left=p.x+"px";
     d.style.top=p.y+"px";
-    d.style.background="blue";
     game.appendChild(d);
   });
 
@@ -338,16 +271,16 @@ function draw(){
   game.appendChild(b);
 }
 
-// LOOP
-function gameLoop(){
-  movePlayers();
-  draw();
+/* CLUB */
+function viewSquad(){
+  alert(squad.map(p=>p.name).join("\n"));
 }
 
-// FORMATION & STRATEGY
-function chooseFormation(){ alert("Formation set"); }
-function openStrategy(){ alert("Strategy set"); }
+function viewTable(){
+  alert("League Table Coming Soon");
+}
 
 </script>
+
 </body>
 </html>
